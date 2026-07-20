@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d2b3e">
+<title>Yacht Club Bingo</title>
+<style>
+  :root{
+    --hull:#0d2b3e;
+    --deep:#06181f;
+    --flag:#e8462f;
+    --brass:#e0a83c;
+    --sail:#f2efe4;
+    --rope:#8d7a5a;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--deep);
+    color:var(--sail);
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:620px;margin:0 auto;padding:14px 12px 40px}
+
+  header{
+    border-bottom:3px double var(--brass);
+    padding-bottom:12px;margin-bottom:14px;
+  }
+  .burgee{
+    display:inline-block;background:var(--flag);color:#fff;
+    font-family:ui-monospace,"SF Mono",Menlo,monospace;
+    font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+    padding:3px 8px;
+  }
+  h1{
+    font-size:clamp(30px,9vw,46px);line-height:.92;margin:9px 0 6px;
+    letter-spacing:-.02em;font-weight:400;
+  }
+  h1 em{font-style:italic;color:var(--brass)}
+  .sub{
+    font-family:ui-monospace,"SF Mono",Menlo,monospace;
+    font-size:11px;color:var(--rope);letter-spacing:.06em;
+  }
+
+  .bar{
+    display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+    margin:14px 0;
+  }
+  input[type=text]{
+    flex:1 1 150px;min-width:0;
+    background:var(--hull);border:1px solid #23485e;color:var(--sail);
+    font-family:inherit;font-size:16px;padding:11px 12px;border-radius:2px;
+  }
+  input::placeholder{color:#5d7c8f}
+  button{
+    font-family:ui-monospace,"SF Mono",Menlo,monospace;
+    font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    padding:11px 13px;border-radius:2px;cursor:pointer;border:1px solid var(--brass);
+    background:transparent;color:var(--brass);
+  }
+  button.solid{background:var(--flag);border-color:var(--flag);color:#fff}
+  button:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+
+  .status{
+    font-family:ui-monospace,"SF Mono",Menlo,monospace;
+    font-size:11px;color:var(--rope);margin-bottom:10px;letter-spacing:.05em;
+  }
+  .status b{color:var(--sail);font-weight:400}
+
+  .grid{
+    display:grid;grid-template-columns:repeat(5,1fr);gap:5px;
+  }
+  .sq{
+    position:relative;aspect-ratio:1;
+    background:var(--hull);border:1px solid #1e3d51;border-radius:2px;
+    padding:5px 4px;
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    font-size:9.5px;line-height:1.2;color:#cfe0ea;
+    cursor:pointer;overflow:hidden;
+    transition:background .12s ease,transform .08s ease;
+  }
+  .sq:active{transform:scale(.95)}
+  .sq.on{background:var(--flag);border-color:#ff6d57;color:#fff}
+  .sq.on::after{
+    content:"";position:absolute;inset:0;
+    background:
+      linear-gradient(45deg,transparent 47%,rgba(255,255,255,.5) 47%,rgba(255,255,255,.5) 53%,transparent 53%);
+  }
+  .sq.free{background:#123c52;border-color:var(--brass);color:var(--brass)}
+  .sq.free.on{background:var(--flag);border-color:#ff6d57;color:#fff}
+
+  .win{
+    display:none;margin-top:16px;padding:14px;
+    border:2px solid var(--brass);border-radius:2px;
+    background:#12384b;text-align:center;
+  }
+  .win.show{display:block;animation:pop .3s ease}
+  @keyframes pop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+  .win h2{margin:0 0 4px;font-size:26px;color:var(--brass);font-style:italic;font-weight:400}
+  .win p{margin:0;font-size:12px;color:#a9c2d0;font-family:ui-monospace,Menlo,monospace}
+
+  .note{
+    margin-top:22px;padding-top:12px;border-top:1px solid #1e3d51;
+    font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#4d6a7c;line-height:1.7;
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="burgee">Harriet Island &middot; Jul 17&ndash;19</span>
+    <h1>Yacht Club<br><em>Bingo</em></h1>
+    <div class="sub">Javaherian family expedition &middot; 7 hands on deck</div>
+  </header>
+
+  <div class="bar">
+    <input type="text" id="name" placeholder="Your name" autocomplete="off" spellcheck="false">
+    <button class="solid" id="deal">Deal card</button>
+    <button id="reset">Clear marks</button>
+  </div>
+
+  <div class="status" id="status">Enter a name to get your card. Same name = same card, every time.</div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="win" id="win">
+    <h2>Bingo!</h2>
+    <p id="winline"></p>
+  </div>
+
+  <div class="note">
+    Marks save on this phone automatically.<br>
+    Everyone types a different name &rarr; everyone gets a different card.<br>
+    Free space is the middle. It's already yours.
+  </div>
+</div>
+
+<script>
+const SQUARES = [
+  // Bands / stage — Friday
+  "Hear a Lumineers song before they play",
+  "Someone says \"is this The Black Keys?\"",
+  "Marcy Playground crowd sings the chorus",
+  "Spot a Dashboard Confessional emo kid, aged 40",
+  "Shakey Graves cowboy hat in the wild",
+  "Mt Joy singalong you can hear from Skipper stage",
+  "Someone asks who Pat Kennedy is",
+  "Night Moves fan explains they're local",
+  "Prize Horse t-shirt sighting",
+  "The Fray plays the one you know",
+  // Saturday
+  "Matchbox 20 mentioned unironically",
+  "Matt & Kim jump off a drum",
+  "Lord Huron makes someone teary",
+  "Lucy Dacus crowd sits down in the grass",
+  "All-American Rejects nostalgia scream",
+  "Yam Haus rep the Twin Cities on mic",
+  "Jensen McRae quiets the whole tent",
+  "Devon Gilfillian gets a stranger dancing",
+  "A band named after a bird (Geese)",
+  "Porch Light before 1:30pm — early bird",
+  // Sunday
+  "Semisonic plays \"Closing Time\" (obviously)",
+  "Cage the Elephant crowd surfer",
+  "The Strokes start late",
+  "Atmosphere shouts out Minnesota",
+  "Dope Lemon vibes put someone to sleep",
+  "Die Spitz mosh pit spotted",
+  "Passion Pit throwback recognized",
+  "Common People — nobody knows them but us",
+  "Heart to Gold local pride moment",
+  "Couch has more members than our family",
+  // Minnesota
+  "Overhear a genuine \"ope\"",
+  "Someone says \"you betcha\" with a straight face",
+  "A Vikings jersey at a music festival",
+  "Someone complains it's too hot for Minnesota",
+  "Mosquito draws blood",
+  "Spot a lake reference on a t-shirt",
+  "Somebody mentions the State Fair unprompted",
+  "Hear \"up north\" used as a destination",
+  "A Duluth mention from a stranger",
+  "Someone brings up the Boundary Waters",
+  "Canoe or kayak visible on the Mississippi",
+  "Hear a Prince song over the PA",
+  // Javaherian family
+  "Anne finds jewelry inspiration in a stage backdrop",
+  "Someone mentions the Grateful Dead unprompted",
+  "Dad talks about a record he wants on vinyl",
+  "Family photo where nobody is looking at the camera",
+  "Someone declares they need water. Immediately.",
+  "A sibling squabble over the setlist",
+  "Someone loses their sunglasses",
+  "Dad checks his phone for a work thing",
+  "Argument about which stage to go to next",
+  "Someone regrets their shoe choice",
+  "A family member falls asleep sitting up",
+  "Group agrees on a snack in under 2 minutes",
+  "Someone says \"we should leave before the encore\"",
+  "Persian side of the family gets a mention",
+  "Dad explains what a soundboard does",
+  // Festival generic
+  "Port-a-potty line longer than 10 people",
+  "Someone paid over $15 for a beer",
+  "Inflatable something bobbing over the crowd",
+  "A stranger asks us to take their photo",
+  "Someone's phone hits 1% battery",
+  "Sunburn stripe where sunscreen missed",
+  "Kid on shoulders blocking the view",
+  "A dropped ice cream tragedy",
+  "Someone dancing with zero rhythm and full joy",
+  "Merch tent sticker shock",
+  "A dog that should not be here",
+  "Glitter on a person over 50"
+];
+
+const $ = s => document.querySelector(s);
+const grid = $("#grid"), status = $("#status"), win = $("#win"), winline = $("#winline");
+let current = null, marks = [], cells = [];
+
+function hash(str){
+  let h = 2166136261 >>> 0;
+  for(let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return h >>> 0;
+}
+function rng(seed){
+  let s = seed >>> 0;
+  return () => { s ^= s<<13; s>>>=0; s ^= s>>17; s ^= s<<5; s>>>=0; return s/4294967296; };
+}
+function buildCard(name){
+  const r = rng(hash(name.trim().toLowerCase()));
+  const pool = SQUARES.slice();
+  for(let i=pool.length-1;i>0;i--){ const j = Math.floor(r()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  const picks = pool.slice(0,24);
+  picks.splice(12, 0, "FREE");
+  return picks;
+}
+function key(name){ return "ycb:" + name.trim().toLowerCase(); }
+
+function render(name){
+  current = name.trim();
+  const card = buildCard(current);
+  const saved = localStorage.getItem(key(current));
+  marks = saved ? JSON.parse(saved) : Array(25).fill(false);
+  marks[12] = true;
+  grid.innerHTML = "";
+  cells = card.map((text,i)=>{
+    const d = document.createElement("div");
+    d.className = "sq" + (i===12 ? " free":"") + (marks[i] ? " on":"");
+    d.textContent = i===12 ? "FREE" : text;
+    d.setAttribute("role","button");
+    d.setAttribute("tabindex","0");
+    d.addEventListener("click", ()=>toggle(i));
+    d.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggle(i);} });
+    grid.appendChild(d);
+    return d;
+  });
+  update();
+}
+function toggle(i){
+  if(i===12) return;
+  marks[i] = !marks[i];
+  cells[i].classList.toggle("on", marks[i]);
+  localStorage.setItem(key(current), JSON.stringify(marks));
+  update();
+}
+function lines(){
+  const L=[];
+  for(let r=0;r<5;r++) L.push([0,1,2,3,4].map(c=>r*5+c));
+  for(let c=0;c<5;c++) L.push([0,1,2,3,4].map(r=>r*5+c));
+  L.push([0,6,12,18,24]); L.push([4,8,12,16,20]);
+  return L;
+}
+function update(){
+  const n = marks.filter(Boolean).length;
+  status.innerHTML = `<b>${current}</b> &middot; ${n}/25 marked`;
+  const hit = lines().filter(l=>l.every(i=>marks[i]));
+  if(hit.length){
+    win.classList.add("show");
+    winline.textContent = hit.length===1 ? "One line down. Go tell everyone." : hit.length + " lines. Showing off now.";
+  } else win.classList.remove("show");
+}
+
+$("#deal").addEventListener("click", ()=>{
+  const v = $("#name").value.trim();
+  if(!v){ status.textContent = "Type a name first — that's what makes your card yours."; return; }
+  localStorage.setItem("ycb:last", v);
+  render(v);
+});
+$("#name").addEventListener("keydown", e=>{ if(e.key==="Enter") $("#deal").click(); });
+$("#reset").addEventListener("click", ()=>{
+  if(!current) return;
+  localStorage.removeItem(key(current));
+  render(current);
+});
+
+const last = localStorage.getItem("ycb:last");
+if(last){ $("#name").value = last; render(last); }
+</script>
+</body>
+</html>
