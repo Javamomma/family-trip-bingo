@@ -2,7 +2,7 @@
 
 ## 1. safe-saves — never fail to show a card because of saving
 Source: audit 2026-10-26, moves 1 + 2 (`~/audits/reports/family-trip-bingo/`).
-Branch: `task/safe-saves`. Status: in progress.
+Branch: `task/safe-saves`. Status: done — merged to main 2026-10-26 (36614e9), not pushed.
 
 **Goal.** Saving can never stop the page from showing a card. Fix the three save
 bugs in `index.html` and add a small test script that proves it.
