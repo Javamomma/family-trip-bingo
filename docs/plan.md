@@ -39,7 +39,7 @@ or stay frozen? Not touched until answered.
 **Out of scope:** the "trip pack" redesign (audit move 3).
 
 ## 2. archive-safe-saves — same save fix for the July keepsake, July marks kept
-Branch: `task/archive-safe-saves`. Status: in progress.
+Branch: `task/archive-safe-saves`. Status: done — merged to main 2026-10-29 (d885b63), not pushed.
 Decision (Arshia, 2026-10-29, Inbox #117): option 2 — fix the July page, keep July's marks.
 
 **Goal.** `trips/2026-07-myc-fest.html` gets the same save safety as `index.html`,
