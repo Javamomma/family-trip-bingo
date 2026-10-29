@@ -3,8 +3,12 @@ import vm from "node:vm";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
-const code = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+const PAGES = {
+  index: { file: "../index.html", key: n => "bingo:2026-07-myc-fest:player:" + n },
+  keepsake: { file: "../trips/2026-07-myc-fest.html", key: n => "ycb:" + n },
+};
+const codeOf = f => fs.readFileSync(new URL(f, import.meta.url), "utf8").match(/<script>([\s\S]*?)<\/script>/)[1];
+let code, KEY;
 
 function el(){
   const e = { children: [], text: "", cls: new Set(), hidden: false, value: "", on: {} };
@@ -60,7 +64,6 @@ function boot(s){
   };
   return app;
 }
-const KEY = n => "bingo:2026-07-myc-fest:player:" + n;
 const LINES = [];
 for(let r = 0; r < 5; r++) LINES.push([0, 1, 2, 3, 4].map(c => r * 5 + c));
 for(let c = 0; c < 5; c++) LINES.push([0, 1, 2, 3, 4].map(r => r * 5 + c));
@@ -176,6 +179,8 @@ const tests = {
     a.clear();
     assert.equal(count(a), 1);
   },
+};
+const indexOnly = {
   "old ycb: saves are left alone"(){
     const s = store(); s.data.set("ycb:kim", "[1]"); s.data.set("ycb:last", "kim");
     const a = boot(s); a.deal("kim"); a.tap(1);
@@ -183,11 +188,48 @@ const tests = {
     assert.equal(s.data.get("ycb:last"), "kim");
   },
 };
+const keepsakeOnly = {
+  "July ycb:<name> save shows up and taps save back there"(){
+    const s = store(), july = Array(25).fill(false); july[5] = july[12] = true;
+    s.data.set("ycb:kim", JSON.stringify(july));
+    const a = boot(s); a.deal("Kim");
+    assert.ok(a.marked()[5]);
+    a.tap(6);
+    assert.equal(JSON.parse(s.data.get("ycb:kim"))[6], true);
+    assert.ok(![...s.data.keys()].some(k => k.startsWith("bingo:")));
+  },
+  "July ycb:last name is pre-filled"(){
+    const s = store(); s.data.set("ycb:last", "Kim");
+    const a = boot(s);
+    assert.equal(a.els.name.value, "Kim");
+    assert.equal(a.card().length, 25);
+  },
+  "ycb-meta:last wins over July ycb:last"(){
+    const s = store(); s.data.set("ycb:last", "Kim"); s.data.set("ycb-meta:last", "Pat");
+    assert.equal(boot(s).els.name.value, "Pat");
+  },
+  "remembered name is saved at ycb-meta:last"(){
+    const s = store(); boot(s).deal("Pat");
+    assert.equal(s.data.get("ycb-meta:last"), "Pat");
+  },
+  "ycb:last holding a saved card is not used as a name"(){
+    const s = store(), july = Array(25).fill(false); july[3] = true;
+    s.data.set("ycb:last", JSON.stringify(july));
+    const a = boot(s);
+    assert.equal(a.els.name.value, "");
+    assert.equal(a.card().length, 0);
+  },
+};
 
 let bad = 0;
-for(const [name, fn] of Object.entries(tests)){
-  try { fn(); console.log("ok   " + name); }
-  catch(e){ bad++; console.log("FAIL " + name + "\n     " + String(e.message).split("\n")[0]); }
+for(const [pname, p] of Object.entries(PAGES)){
+  code = codeOf(p.file); KEY = p.key;
+  const set = { ...tests, ...(pname === "index" ? indexOnly : keepsakeOnly) };
+  for(const [name, fn] of Object.entries(set)){
+    try { fn(); console.log(`ok   [${pname}] ${name}`); }
+    catch(e){ bad++; console.log(`FAIL [${pname}] ${name}\n     ` + String(e.message).split("\n")[0]); }
+  }
 }
+
 console.log(bad ? `\n${bad} failed` : "\nall passed");
 process.exit(bad ? 1 : 0);

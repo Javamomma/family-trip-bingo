@@ -125,6 +125,8 @@
 
   <div class="status" id="status">Enter a name to get your card. Same name = same card, every time.</div>
 
+  <div class="status" id="nosave" hidden>Not saved on this phone</div>
+
   <div class="grid" id="grid"></div>
 
   <div class="win" id="win">
@@ -219,8 +221,9 @@ const SQUARES = [
 ];
 
 const $ = s => document.querySelector(s);
-const grid = $("#grid"), status = $("#status"), win = $("#win"), winline = $("#winline");
+const grid = $("#grid"), status = $("#status"), win = $("#win"), winline = $("#winline"), nosave = $("#nosave");
 let current = null, marks = [], cells = [];
+const mem = {};
 
 function hash(str){
   let h = 2166136261 >>> 0;
@@ -240,12 +243,35 @@ function buildCard(name){
   return picks;
 }
 function key(name){ return "ycb:" + name.trim().toLowerCase(); }
+const LAST = "ycb-meta:last";
+function warn(bad){ nosave.hidden = !bad; }
+function load(k){
+  try{ return localStorage.getItem(k); }catch(e){ warn(true); return null; }
+}
+function save(k, v){
+  try{
+    if(v === null) localStorage.removeItem(k); else localStorage.setItem(k, v);
+    warn(false); return true;
+  }catch(e){ warn(true); return false; }
+}
+function valid(a){ return Array.isArray(a) && a.length === 25 && a.every(x => typeof x === "boolean"); }
+function read(k){
+  if(mem[k]) return mem[k];
+  let a = null;
+  try{ a = JSON.parse(load(k)); }catch(e){}
+  return valid(a) ? a : Array(25).fill(false);
+}
+function oldName(){
+  const v = load("ycb:last");
+  if(!v) return null;
+  try{ if(Array.isArray(JSON.parse(v))) return null; }catch(e){}
+  return v;
+}
 
 function render(name){
   current = name.trim();
   const card = buildCard(current);
-  const saved = localStorage.getItem(key(current));
-  marks = saved ? JSON.parse(saved) : Array(25).fill(false);
+  marks = mem[key(current)] = read(key(current));
   marks[12] = true;
   grid.innerHTML = "";
   cells = card.map((text,i)=>{
@@ -265,7 +291,7 @@ function toggle(i){
   if(i===12) return;
   marks[i] = !marks[i];
   cells[i].classList.toggle("on", marks[i]);
-  localStorage.setItem(key(current), JSON.stringify(marks));
+  save(key(current), JSON.stringify(marks));
   update();
 }
 function lines(){
@@ -277,7 +303,10 @@ function lines(){
 }
 function update(){
   const n = marks.filter(Boolean).length;
-  status.innerHTML = `<b>${current}</b> &middot; ${n}/25 marked`;
+  status.textContent = "";
+  const b = document.createElement("b");
+  b.textContent = current;
+  status.append(b, ` \u00b7 ${n}/25 marked`);
   const hit = lines().filter(l=>l.every(i=>marks[i]));
   if(hit.length){
     win.classList.add("show");
@@ -288,17 +317,18 @@ function update(){
 $("#deal").addEventListener("click", ()=>{
   const v = $("#name").value.trim();
   if(!v){ status.textContent = "Type a name first — that's what makes your card yours."; return; }
-  localStorage.setItem("ycb:last", v);
+  save(LAST, v);
   render(v);
 });
 $("#name").addEventListener("keydown", e=>{ if(e.key==="Enter") $("#deal").click(); });
 $("#reset").addEventListener("click", ()=>{
   if(!current) return;
-  localStorage.removeItem(key(current));
+  mem[key(current)] = Array(25).fill(false);
+  save(key(current), null);
   render(current);
 });
 
-const last = localStorage.getItem("ycb:last");
+const last = load(LAST) || oldName();
 if(last){ $("#name").value = last; render(last); }
 </script>
 </body>
