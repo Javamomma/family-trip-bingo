@@ -37,3 +37,37 @@ bugs in `index.html` and add a small test script that proves it.
 or stay frozen? Not touched until answered.
 
 **Out of scope:** the "trip pack" redesign (audit move 3).
+
+## 2. archive-safe-saves — same save fix for the July keepsake, July marks kept
+Branch: `task/archive-safe-saves`. Status: in progress.
+Decision (Arshia, 2026-10-29, Inbox #117): option 2 — fix the July page, keep July's marks.
+
+**Goal.** `trips/2026-07-myc-fest.html` gets the same save safety as `index.html`,
+but keeps reading and writing the marks people saved in July, so opening the
+keepsake still shows each person's July card as they left it.
+
+**Acceptance criteria**
+- Player marks stay at `ycb:<name>` (trimmed, lowercased), exactly where July
+  saved them: a July save shows up and new taps save back there.
+- The remembered name moves to its own key, `ycb-meta:last`, so a player named
+  "last" (any capitalisation) works. If `ycb-meta:last` is empty, the page pre-fills
+  from July's `ycb:last` once, but only if it holds a plain name (not a saved card).
+- Every storage call goes through try/catch `load`/`save` helpers, including when
+  merely touching `localStorage` throws.
+- A save is used only if it is exactly 25 true/false values; anything else starts
+  a fresh card. Centre square (index 12) always marked.
+- If storage refuses, play continues in memory and a quiet "not saved on this
+  phone" note shows; it hides once a save works. Clear always shows a fresh card.
+- Status line built with `textContent`, not `innerHTML`.
+- Cards unchanged: `hash`, `rng`, `buildCard`, `SQUARES` untouched. Nothing else in
+  the keepsake changes (text, look, squares).
+- `index.html` untouched.
+- `node tests/bingo.test.mjs` runs the save checks against both pages, plus
+  keepsake checks: a July `ycb:<name>` save shows up; July's `ycb:last` name is
+  pre-filled; the name "last" works; a `ycb:last` holding a saved card is not used
+  as a name.
+- Keepsake still opens straight from the file.
+
+**Files:** `trips/2026-07-myc-fest.html`, `tests/bingo.test.mjs`.
+
+**Out of scope:** the "trip pack" redesign (audit move 3).
